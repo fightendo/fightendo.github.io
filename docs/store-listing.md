@@ -82,4 +82,4 @@ FightEndo does not diagnose, is not a medical device and does not replace medica
 | Kategorie | Medizin (Apple) · Medizin oder Gesundheit & Fitness (Google) |
 | Preis | Kostenlos, keine In-App-Käufe |
 | Support-URL | GitHub-Issues des Projekts |
-| Datenschutz-URL | `https://<user>.github.io/fightendo/privacy.html` |
+| Datenschutz-URL | `https://fightendo.github.io/privacy.html` |

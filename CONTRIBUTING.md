@@ -18,7 +18,7 @@ You need [Node.js](https://nodejs.org) 22 or newer and Git. The checks below nee
 
 ```bash
 # 1. Fork on GitHub, then:
-git clone https://github.com/<you>/fightendo && cd fightendo
+git clone https://github.com/<you>/fightendo.github.io fightendo && cd fightendo
 
 # 2. Create your country or language (registers it in the app automatically)
 npm run new -- country at "Österreich (ÖGK)" de

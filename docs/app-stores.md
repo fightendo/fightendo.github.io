@@ -45,7 +45,7 @@ Ein iOS-Build ist über GitHub möglich, ganz ohne eigenen Mac (`.github/workflo
    Base64 davon als Secret `ANDROID_KEYSTORE_BASE64` hinterlegen, dazu die drei Passwort- und Alias-Secrets. In der Play Console **Play App Signing** aktivieren.
 3. Einen Tag `v0.2.0` pushen. Der Workflow „Android“ baut die signierte `.aab`, die du dann in der Play Console hochlädst.
 4. **App-Inhalte** ausfüllen (die Antworten stehen in [store-listing.md](store-listing.md)):
-   - Datenschutzerklärung: `https://<user>.github.io/fightendo/privacy.html`
+   - Datenschutzerklärung: `https://fightendo.github.io/privacy.html`
    - **Datensicherheit:** Es werden keine Daten erhoben und keine Daten geteilt. Die App hat keine INTERNET-Berechtigung, das ist im Manifest nachprüfbar.
    - **Gesundheits-App-Erklärung:** Kategorie „Gesundheit & Fitness / medizinische Informationen“, kein Medizinprodukt, Haftungsausschluss vorhanden.
    - Werbung: nein. App-Zugriff: keine Anmeldung nötig.
