@@ -110,17 +110,19 @@
     },
     newSalt: function () { return crypto.getRandomValues(new Uint8Array(16)); },
     // Returns a JSON-safe envelope. The salt travels with the data, the key never does.
-    encrypt: async function (key, salt, obj) {
+    // \`iter\` must be the iteration count the key was derived with (default: the current one).
+    encrypt: async function (key, salt, obj, iter) {
       const iv = crypto.getRandomValues(new Uint8Array(12));
       const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, new TextEncoder().encode(JSON.stringify(obj)));
-      return { fightendo: 'encrypted', v: 1, kdf: 'PBKDF2-SHA256', iter: ITER, salt: b64(salt), iv: b64(iv), data: b64(ct) };
+      return { fightendo: 'encrypted', v: 1, kdf: 'PBKDF2-SHA256', iter: iter || ITER, salt: b64(salt), iv: b64(iv), data: b64(ct) };
     },
     // Throws on a wrong passphrase (GCM authentication fails).
     decrypt: async function (pass, env) {
       const salt = unb64(env.salt);
-      const key = await FE.crypto.deriveKey(pass, salt, env.iter);
+      const iter = env.iter || ITER;
+      const key = await FE.crypto.deriveKey(pass, salt, iter);
       const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(env.iv) }, key, unb64(env.data));
-      return { state: JSON.parse(new TextDecoder().decode(pt)), key: key, salt: salt };
+      return { state: JSON.parse(new TextDecoder().decode(pt)), key: key, salt: salt, iter: iter };
     }
   };
 
@@ -145,7 +147,8 @@
       const out = Object.assign({}, base);
       if (over && typeof over === 'object') {
         for (const k of Object.keys(over)) {
-          out[k] = k in base ? FE.merge(base[k], over[k]) : over[k];
+          if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+          out[k] = Object.prototype.hasOwnProperty.call(base, k) ? FE.merge(base[k], over[k]) : over[k];
         }
       }
       return out;

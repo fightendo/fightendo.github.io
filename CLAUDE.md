@@ -66,7 +66,9 @@ The users are patients writing about sensitive health data, often to an insurer 
   - `body` reserves `padding-bottom` for the bar, except while the user is typing or the app is locked.
   - The text-size setting sets CSS `zoom` on the root element from `js/app.js` (0.9 to 1.5).
   - When changing CSS, check at 320px wide with 150% text and confirm nothing overflows or sits under the bar. The self-test measures the last text line against the bar.
-- **The web version gets extra guidance the app doesn't need**, gated on `!isNative()` in `js/app.js`: a first-visit note (seen-flag `fightendo.webinfo`), a backup reminder (every 14 days once there is data, using `settings.lastBackup`), and the web-only sections of the help page (`#help`).
+- **Explanations live in the pages, not in pop-ups:** the start page, a "why" box per page (hidden ones in `settings.hiddenWhy`), ⓘ tips via `field(…, { tip })`, the "Step n of 4" indicator, and an optional per-country `example` letter (validated by `tools/validate.mjs`). The password offer appears once personal data is entered (`settings.lockOfferDismissed`).
+- **The web version gets extra guidance the app doesn't need**, gated on `!isNative()` in `js/app.js`: a backup reminder (every 14 days once there is data, using `settings.lastBackup`) and the web-only sections of the help page (`#help`).
+- **Encryption envelopes record their PBKDF2 iteration count** (`iter`); the unlocked `vault` keeps it, so raising the default never makes existing data unreadable.
 - **Test phase:** the site runs unlisted. `index.html`, `privacy.html` and `impressum.html` carry `<meta name="robots" content="noindex, nofollow">`; remove it from all three at launch. The `[placeholders]` in `impressum.html` stay during the test phase (the user's decision) and must be filled in before launch.
 - **Test against real behaviour:**
   - Check the encryption with real ciphertext in the browser, not by reading the code.

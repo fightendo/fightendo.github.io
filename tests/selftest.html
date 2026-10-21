@@ -422,6 +422,69 @@
     return 'AES-256-GCM, PBKDF2 600k';
   });
 
+  await test('encrypted backup: password asked in a password field, wrong one rejected', async () => {
+    if (!W().crypto || !W().crypto.subtle) return 'skipped – no Web Crypto here';
+    const FE = W().FightEndo;
+    const salt = FE.crypto.newSalt();
+    const key = await FE.crypto.deriveKey('backup-pass-1', salt);
+    const backup = await FE.crypto.encrypt(key, salt, Object.assign(FE.emptyState(), { encounters: [{ id: 'imp1', date: '2026-01-02', who: 'Import Person', specialty: '', said: '', refused: '', verbatim: false, witness: '' }] }));
+    await go('data');
+    W().HTMLInputElement.prototype.click = function () {};   // no real file dialog in the test
+    await click('[data-action="import"]');
+    const input = $('#import-file');
+    const dt = new (W().DataTransfer)();
+    dt.items.add(new (W().File)([JSON.stringify(backup)], 'b.json', { type: 'application/json' }));
+    input.files = dt.files;
+    input.onchange(); await sleep(300);
+    assert($('#import-pass') && $('#import-pass').type === 'password', 'no password field for the encrypted backup');
+    $('#import-pass').value = 'wrong-pass';
+    $('form[data-form="importPass"]').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await sleep(1500);
+    assert($('#import-pass'), 'wrong password should keep the form open');
+    $('#import-pass').value = 'backup-pass-1';
+    $('form[data-form="importPass"]').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await sleep(1500);
+    assert(!$('#import-pass'), 'form still open after the right password');
+    await go('history');
+    const who = $('[data-bind="encounters.0.who"]');
+    assert(who && who.value === 'Import Person', 'imported data not loaded');
+  });
+
+  await test('encryption keeps the iteration count the data was saved with', async () => {
+    if (!W().crypto || !W().crypto.subtle) return 'skipped – no Web Crypto here';
+    const FE = W().FightEndo;
+    // Store data encrypted with an older, lower iteration count, unlock, change something, save.
+    // Lock first: an unlocked app saves again when the page is reloaded, which would overwrite the prepared data.
+    await go('data'); await click('[data-action="lockNow"]'); await sleep(300);
+    const salt = FE.crypto.newSalt();
+    const key = await FE.crypto.deriveKey('old-pass-123', salt, 1000);
+    localStorage.setItem('fightendo.enc.v1', JSON.stringify(await FE.crypto.encrypt(key, salt, FE.emptyState(), 1000)));
+    localStorage.removeItem(KEY);
+    let p = waitLoad(); W().location.reload(); await p; hookErrors(); await sleep(250);
+    const unlocked = new Promise((r) => D().addEventListener('fightendo:unlock', (e) => r(e.detail.ok), { once: true }));
+    $('#lock-pass').value = 'old-pass-123';
+    $('form[data-form="unlock"]').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    const within = (pr, ms, msg) => Promise.race([pr, sleep(ms).then(() => { throw new Error(msg); })]);
+    assert(await within(unlocked, 15000, 'no unlock event (lock screen: ' + !!$('#lock-pass') + ')'), 'could not unlock data with 1000 iterations');
+    await go('symptoms');
+    const saved = new Promise((r) => D().addEventListener('fightendo:saved', r, { once: true }));
+    set('symptoms.notes', 'after unlock');
+    await within(saved, 15000, 'no save after the change');
+    const env = JSON.parse(localStorage.getItem('fightendo.enc.v1'));
+    assert(env.iter === 1000, 'saved envelope claims ' + env.iter + ' iterations, key was made with 1000');
+    // Fresh reference: crypto calls of the page from before the reload never settle.
+    const back = await W().FightEndo.crypto.decrypt('old-pass-123', env);
+    assert(back.state.symptoms.notes === 'after unlock', 'saved data cannot be decrypted again');
+  });
+
+  await test('backup files cannot change object prototypes', () => {
+    const FE = W().FightEndo;
+    const merged = FE.merge(FE.emptyState(), JSON.parse('{"__proto__":{"polluted":1},"settings":{"constructor":{"x":1}},"symptoms":{}}'));
+    assert(merged.polluted === undefined && Object.getPrototypeOf(merged) === W().Object.prototype, 'prototype changed by "__proto__"');
+    assert(({}).polluted === undefined, 'global prototype polluted');
+    assert(typeof merged.settings.constructor === 'function', '"constructor" key was copied');
+  });
+
   await test('wipe removes all data', async () => {
     await go('data');
     await click('[data-action="wipe"]');

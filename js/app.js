@@ -9,7 +9,7 @@
 
   // App lock: when data is stored encrypted, start locked. `vault` holds the
   // in-memory AES key while unlocked; it is never written anywhere.
-  let vault = null;          // { key, salt }
+  let vault = null;          // { key, salt, iter }
   let locked = !!FE.loadEncrypted();
   const LOCK_AFTER_MS = 60 * 1000;       // lock when the app was in the background this long
   const IDLE_LOCK_MS = 5 * 60 * 1000;    // or after 5 minutes without interaction
@@ -18,6 +18,7 @@
   const TEXT_SIZES = ['0.9', '1', '1.15', '1.3', '1.5'];
   const BACKUP_REMIND_DAYS = 14;               // web version: remind to download a backup this often
   let backupSnoozed = false;                   // "Later" hides the reminder until the next visit
+  let pendingImport = null;                    // an encrypted backup waiting for its password (memory only)
 
   function deviceLang() {
     const lang = (navigator.language || 'en').slice(0, 2).toLowerCase();
@@ -95,7 +96,7 @@
   async function flushEncrypted() {
     clearTimeout(saveTimer);
     if (!vault || locked) return;
-    const env = await FE.crypto.encrypt(vault.key, vault.salt, state);
+    const env = await FE.crypto.encrypt(vault.key, vault.salt, state, vault.iter);
     if (!FE.saveEncrypted(env) && !storageWarned) { storageWarned = true; toast(t('data.storageFail'), 8000); }
     document.dispatchEvent(new CustomEvent('fightendo:saved'));
   }
@@ -107,8 +108,11 @@
     vault = null;
     locked = true;
     const locale = state.settings.locale;
+    const textSize = state.settings.textSize;
     state = FE.emptyState();               // drop decrypted data from memory
     state.settings.locale = locale;
+    state.settings.textSize = textSize;
+    Object.keys(heads).forEach((k) => { delete heads[k]; });
     if (FE.native) FE.native.cleanup();
     render();
   }
@@ -137,8 +141,8 @@
       const tip = tipButton(opts.tip);
       const inner = field(label, path, Object.assign({}, opts, { tip: null }));
       // The button goes next to the label (or the checkbox), the text below the input.
-      if (opts.type === 'checkbox') return '<div class="tipwrap">' + inner.replace(/<\/label>$/, '</label>' + tip.button) + tip.text + '</div>';
-      return inner.replace('</label>', '</label>' + tip.button).replace(/<\/div>$/, tip.text + '</div>');
+      if (opts.type === 'checkbox') return '<div class="tipwrap">' + inner.replace(/<\/label>$/, () => '</label>' + tip.button) + tip.text + '</div>';
+      return inner.replace('</label>', () => '</label>' + tip.button).replace(/<\/div>$/, () => tip.text + '</div>');
     }
     const v = FE.getPath(state, path);
     const id = 'f-' + path.replace(/\./g, '-');
@@ -581,12 +585,17 @@
   views.data = function () {
     return '<h1>' + esc(t('data.title')) + '</h1>' + why('data') + '<p class="lead">' + esc(t('data.lead')) + '</p>' +
       securityPanel() +
-      (vault ? '<p class="muted">' + esc(t('sec.exportNote')) + '</p>' : '') +
+      '<p class="muted">' + esc(t(vault ? 'sec.exportNote' : 'data.exportPlain')) + '</p>' +
       '<section class="panel actions">' +
       '<button class="btn primary" data-action="export">' + esc(t('data.export')) + '</button>' +
       '<button class="btn" data-action="import">' + esc(t('data.import')) + '</button>' +
       '<input type="file" id="import-file" accept="application/json,.json" hidden>' +
-      '</section><section class="panel danger"><button class="btn danger" data-action="wipe">' + esc(t('data.wipe')) + '</button></section>' +
+      '</section>' +
+      (pendingImport ? '<form class="panel accent" data-form="importPass"><p><strong>' + esc(t('data.importPass')) + '</strong></p>' +
+        '<div class="field"><label for="import-pass">' + esc(t('lock.pass')) + '</label><input id="import-pass" type="password" autocomplete="current-password"></div>' +
+        '<div class="actions"><button class="btn primary" type="submit">' + esc(t('data.importOpen')) + '</button>' +
+        '<button class="btn ghost" type="button" data-action="importCancel">' + esc(t('data.importCancel')) + '</button></div></form>' : '') +
+      '<section class="panel danger"><button class="btn danger" data-action="wipe">' + esc(t('data.wipe')) + '</button></section>' +
       '<p><a href="privacy.html">' + esc(t('data.privacy')) + '</a></p>';
   };
 
@@ -725,13 +734,26 @@
     const busy = (on) => { if (btn) { btn.disabled = on; btn.textContent = on ? t('lock.working') : btn.dataset.label || btn.textContent; } };
     if (btn && !btn.dataset.label) btn.dataset.label = btn.textContent;
 
+    if (kind === 'importPass') {
+      const pass = document.getElementById('import-pass').value;
+      busy(true);
+      try {
+        applyImport((await FE.crypto.decrypt(pass, pendingImport)).state);
+      } catch (err) {
+        busy(false);
+        toast(t('lock.wrong'));
+        document.getElementById('import-pass').select();
+      }
+      return;
+    }
+
     if (kind === 'unlock') {
       const pass = document.getElementById('lock-pass').value;
       busy(true);
       try {
         const res = await FE.crypto.decrypt(pass, FE.loadEncrypted());
         state = FE.merge(FE.emptyState(), res.state);
-        vault = { key: res.key, salt: res.salt };
+        vault = { key: res.key, salt: res.salt, iter: res.iter };
         locked = false;
         lastActivity = Date.now();
         render();
@@ -752,7 +774,7 @@
     busy(true);
     const salt = FE.crypto.newSalt();
     const key = await FE.crypto.deriveKey(p1, salt);
-    vault = { key: key, salt: salt };
+    vault = { key: key, salt: salt, iter: 0 };   // 0 = the current default iteration count
     await flushEncrypted();               // writes ciphertext, removes the plaintext copy
     toast(t(kind === 'enableLock' ? 'sec.enabled' : 'sec.changed'));
     render();
@@ -858,7 +880,7 @@
     },
     async export() {
       // With the app lock on, backups are encrypted with the same passphrase.
-      const body = vault ? await FE.crypto.encrypt(vault.key, vault.salt, state) : state;
+      const body = vault ? await FE.crypto.encrypt(vault.key, vault.salt, state, vault.iter) : state;
       const ok = await saveFile('fightendo-' + (vault ? 'verschluesselt-' : 'sicherung-') + FE.today() + '.json', JSON.stringify(body, null, 2), 'application/json');
       if (ok) { state.settings.lastBackup = FE.today(); persist(); render(); }
     },
@@ -907,19 +929,21 @@
           try {
             let data = JSON.parse(reader.result);
             if (data && data.fightendo === 'encrypted') {
-              const pass = prompt(t('data.importPass'));
-              if (!pass) return;
-              data = (await FE.crypto.decrypt(pass, data)).state;
+              pendingImport = data;           // ask for the password in the page (see views.data)
+              render();
+              const p = document.getElementById('import-pass');
+              if (p) p.focus();
+              return;
             }
-            if (!data || typeof data !== 'object' || !data.symptoms) throw new Error('not a FightEndo backup');
-            state = FE.merge(FE.emptyState(), data);
-            persist(); render(); toast(t('data.importOk'));
+            applyImport(data);
           } catch (err) { toast(t('data.importFail')); }
+          input.value = '';
         };
         reader.readAsText(file);
       };
       input.click();
     },
+    importCancel() { pendingImport = null; render(); },
     wipe() {
       if (!confirm(t('data.wipeConfirm'))) return;
       FE.wipe();
@@ -928,6 +952,13 @@
       render(); toast(t('data.wiped'));
     }
   };
+
+  function applyImport(data) {
+    if (!data || typeof data !== 'object' || !data.symptoms) throw new Error('not a FightEndo backup');
+    state = FE.merge(FE.emptyState(), data);
+    pendingImport = null;
+    persist(); render(); toast(t('data.importOk'));
+  }
 
   function onClick(e) {
     const el = e.target.closest('[data-action]');

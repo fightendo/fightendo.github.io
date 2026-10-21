@@ -27,7 +27,7 @@ SO FUNKTIONIERT’S
 DEINE DATEN GEHÖREN DIR
 • Alles bleibt auf deinem Gerät. Es gibt kein Konto, keine Cloud, keine Werbung und kein Tracking.
 • Die App hat keine Internet-Berechtigung und kann technisch nichts senden.
-• Eine optionale App-Sperre verschlüsselt alle Daten mit AES-256. Screenshots und die Vorschau im App-Umschalter sind blockiert.
+• Ein optionaler Passwortschutz verschlüsselt alle Daten mit AES-256. Screenshots und die Vorschau im App-Umschalter sind blockiert.
 
 OFFEN FÜR ALLE
 FightEndo ist freie Software (GPL-3.0). Juristinnen und Juristen sowie Betroffene aus anderen Ländern können ihre Rechtslage ergänzen.
@@ -60,7 +60,7 @@ HOW IT WORKS
 YOUR DATA IS YOURS
 • Everything stays on your device. There is no account, no cloud, no ads and no tracking.
 • The app has no internet permission and technically cannot send anything.
-• An optional app lock encrypts all data with AES-256. Screenshots and the app-switcher preview are blocked.
+• Optional password protection encrypts all data with AES-256. Screenshots and the app-switcher preview are blocked.
 
 OPEN TO EVERYONE
 FightEndo is free software (GPL-3.0). Lawyers and patients from other countries can add their own legal system.

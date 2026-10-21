@@ -36,7 +36,7 @@
       const res = await P.Filesystem.readdir({ path: '', directory: 'CACHE' });
       for (const f of res.files || []) {
         const name = typeof f === 'string' ? f : f.name;
-        if (/\.(pdf|txt|json)$/i.test(name)) await P.Filesystem.deleteFile({ path: name, directory: 'CACHE' });
+        if (/\.(pdf|txt|rtf|json)$/i.test(name)) await P.Filesystem.deleteFile({ path: name, directory: 'CACHE' });
       }
     } catch (e) { /* nothing to clean */ }
   }

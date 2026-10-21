@@ -14,7 +14,7 @@ Im Schnitt dauert es viele Jahre bis zur Diagnose. Ein Beispiel dafür, was Betr
 ## Grundsätze
 
 - **Alles bleibt lokal.** Es gibt keinen Server, kein Konto, keine Analyse und keine Werbung. Die Content-Security-Policy (`connect-src 'none'`) verbietet jede Netzwerkverbindung, und die Android-App hat nicht einmal die INTERNET-Berechtigung.
-- **Schutz sensibler Daten.** Eine optionale App-Sperre verschlüsselt alle Daten mit AES-256-GCM (PBKDF2, 600 000 Runden) und sperrt sich automatisch. In den Apps sind Screenshots und die Vorschau im App-Umschalter blockiert, und es gibt keine Cloud-Backups.
+- **Schutz sensibler Daten.** Ein optionaler Passwortschutz verschlüsselt alle Daten mit AES-256-GCM (PBKDF2, 600 000 Runden) und sperrt sich automatisch. In den Apps sind Screenshots und die Vorschau im App-Umschalter blockiert, und es gibt keine Cloud-Backups.
 - **Offen für alle Länder und Sprachen.** Jede Rechtsordnung ist eine eigene Datei. Neue Länder und Sprachen legt man mit einem Befehl an und prüft sie automatisch, siehe [CONTRIBUTING.md](CONTRIBUTING.md).
 - **Keine Diagnose, keine Rechtsberatung.** FightEndo liefert Argumente und Formulierungen. Die Verantwortung für den Brief bleibt bei der Person, die ihn verschickt.
 
@@ -29,7 +29,7 @@ Im Schnitt dauert es viele Jahre bis zur Diagnose. Ein Beispiel dafür, was Betr
   - Text, Drucken und Kopieren.
   - Am PC öffnet sich ein „Speichern unter“-Dialog, damit auch Dropbox-, Drive- oder OneDrive-Ordner wählbar sind. Auf dem Handy öffnet sich das Teilen-Menü (Dateien, Drive, Dropbox, E-Mail, App der Krankenkasse).
   - FightEndo lädt nie selbst etwas hoch.
-- **Sicherung** als Datei. Bei aktiver App-Sperre ist sie verschlüsselt.
+- **Sicherung** als Datei. Mit Passwortschutz ist sie verschlüsselt.
 
 ## Benutzen
 

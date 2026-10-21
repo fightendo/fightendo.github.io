@@ -72,14 +72,14 @@ Ein iOS-Build ist über GitHub möglich, ganz ohne eigenen Mac (`.github/workflo
 | Keine Netzwerkverbindung | keine INTERNET-Berechtigung und CSP `connect-src 'none'` | CSP | CSP |
 | Andere Apps können nichts lesen | App-Sandbox | App-Sandbox | Browser-Origin |
 | Optionale Verschlüsselung (AES-256-GCM, PBKDF2 600k) mit Auto-Sperre | ✓ | ✓ | ✓ |
-| Keine Cloud-Backups der App-Daten | `allowBackup=false` | nur verschlüsselt (App-Sperre empfohlen) | – |
+| Keine Cloud-Backups der App-Daten | `allowBackup=false` und `dataExtractionRules` (auch kein Umzug auf ein neues Gerät) | nur verschlüsselt (Passwortschutz empfohlen) | – |
 | Kein Screenshot / keine Vorschau im App-Umschalter | FLAG_SECURE | Abdeckung beim Wechsel | – |
 | Temporäre PDFs werden gelöscht | beim Start und beim Sperren | beim Start und beim Sperren | – |
 | Keine Protokollierung von Inhalten | `loggingBehavior: none` | dito | – |
 
 Grenzen, die offen kommuniziert werden sollten:
-- Wer das entsperrte Gerät in der Hand hat, sieht bei ausgeschalteter App-Sperre die Daten.
-- In der Web-Version können Browser-Erweiterungen den Speicher lesen, solange die App-Sperre aus ist.
+- Wer das entsperrte Gerät in der Hand hat, sieht ohne Passwortschutz die Daten.
+- In der Web-Version können Browser-Erweiterungen mit Zugriff auf alle Webseiten den Speicher lesen, solange kein Passwort gesetzt ist, und bei entsperrter App auch die angezeigten Daten.
 - Einmal geteilte oder ausgedruckte Briefe liegen außerhalb der App.
 
 ## Checkliste vor dem ersten Release
