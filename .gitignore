@@ -13,3 +13,6 @@ android/app/release/
 *.aab
 *.keystore
 *.jks
+
+# Claude Code's local settings: approved commands are saved word for word and may contain secrets.
+.claude/settings.local.json
